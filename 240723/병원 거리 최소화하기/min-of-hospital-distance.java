@@ -36,14 +36,14 @@ public class Main {
 	// hospital select combination
 	private static void hospitalCombi(boolean[] selected, int start, int cnt) {
 		// after selection, calculate distance between hospital and patient
-		if (m == cnt) {
+		if (cnt == m) {
 			calculateDist(selected);
 			return;
 		}
 		// hospital select
 		for (int i = start; i < hospital.size(); i++) {
 			selected[i] = true;
-			hospitalCombi(selected, start+1, cnt+1);
+			hospitalCombi(selected, i+1, cnt+1);
 			selected[i] = false;
 		}
 
@@ -65,4 +65,5 @@ public class Main {
 		minDistance = Math.min(minDistance, total);
 		
 	}
+
 }
