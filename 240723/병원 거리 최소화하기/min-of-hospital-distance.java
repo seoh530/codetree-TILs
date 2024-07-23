@@ -4,20 +4,21 @@ import java.util.Scanner;
 
 public class Main {
 
-	public static int n, m;
-	public static List<int[]> patient = new ArrayList<>();
-	public static List<int[]> hospital = new ArrayList<>();
-	public static int minDistance = Integer.MAX_VALUE;
-	public static int[][] map;
-	public static boolean[] selected;
+	static int n, m;
+	static int[][] map;
+	static List<int[]> patient = new ArrayList<>();
+	static List<int[]> hospital = new ArrayList<>();
+	static boolean[] selected;
+	static int minDistance = Integer.MAX_VALUE;
 
 	public static void main(String[] args) {
+
 		Scanner sc = new Scanner(System.in);
 		n = sc.nextInt();
 		m = sc.nextInt();
 
 		map = new int[n][n];
-
+		
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
 				map[i][j] = sc.nextInt();
@@ -30,38 +31,38 @@ public class Main {
 		selected = new boolean[hospital.size()];
 		hospitalCombi(selected, 0, 0);
 		System.out.println(minDistance);
-
 	}
 
-	public static void hospitalCombi(boolean[] selected, int start, int cnt) {
-		if (cnt == m) {
+	// hospital select combination
+	private static void hospitalCombi(boolean[] selected, int start, int cnt) {
+		// after selection, calculate distance between hospital and patient
+		if (m == cnt) {
 			calculateDist(selected);
 			return;
 		}
-		// hospital combination
+		// hospital select
 		for (int i = start; i < hospital.size(); i++) {
 			selected[i] = true;
-			hospitalCombi(selected, i + 1, cnt + 1);
+			hospitalCombi(selected, start+1, cnt+1);
 			selected[i] = false;
 		}
 
 	}
 
-	public static void calculateDist(boolean[] selected) {
-		int sumDist = 0;
+	private static void calculateDist(boolean[] selected) {
+		int total = 0;
 		for (int[] person : patient) {
 			int minDist = Integer.MAX_VALUE;
 			for (int i = 0; i < hospital.size(); i++) {
 				if (selected[i]) {
-					int[] hospitals = hospital.get(i);
-					int dist = Math.abs(person[0] - hospitals[0]) + Math.abs(person[1] - hospitals[1]);
-					minDist = Math.min(minDist, dist);
+					int[] h = hospital.get(i);
+					int tempDist = Math.abs(person[0]- h[0]) + Math.abs(person[1]- h[1]);
+					minDist = Math.min(minDist, tempDist);
 				}
 			}
-			sumDist += minDist;
-            if(sumDist >= minDistance) return;
+			total += minDist;
 		}
-		minDistance = Math.min(minDistance, sumDist);
+		minDistance = Math.min(minDistance, total);
+		
 	}
-
 }
