@@ -59,6 +59,7 @@ public class Main {
 				}
 			}
 			sumDist += minDist;
+            if(sumDist >= minDistance) return;
 		}
 		minDistance = Math.min(minDistance, sumDist);
 	}
