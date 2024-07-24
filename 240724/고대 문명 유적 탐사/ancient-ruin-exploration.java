@@ -1,222 +1,138 @@
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Scanner;
+
 public class Main {
-    public static void main(String[] args) {
-        // 여기에 코드를 작성해주세요.
-    }
-import java.util.*;
+    static final int N_large = 5; // 고대 문명 전체 격자 크기
+    static final int N_small = 3; // 회전시킬 격자의 크기
 
-public class ArtifactExploration {
-    static int[][] grid = new int[5][5];
-    static List<Integer> artifactPieces;
-    static int artifactIndex = 0;
-    static int[] dRow = {0, 1, 0, -1};
-    static int[] dCol = {1, 0, -1, 0};
+    static class Board {
+        int[][] a = new int[N_large][N_large];
 
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        int K = sc.nextInt();
-        int M = sc.nextInt();
-
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) {
-                grid[i][j] = sc.nextInt();
+        public Board() {
+            for (int i = 0; i < N_large; i++) {
+                for (int j = 0; j < N_large; j++) {
+                    a[i][j] = 0;
+                }
             }
         }
 
-        artifactPieces = new ArrayList<>();
-        for (int i = 0; i < M; i++) {
-            artifactPieces.add(sc.nextInt());
+        private boolean inRange(int y, int x) {
+            return 0 <= y && y < N_large && 0 <= x && x < N_large;
         }
 
-        List<Integer> results = new ArrayList<>();
-        for (int turn = 0; turn < K; turn++) {
-            int bestRow = -1, bestCol = -1, bestRotation = -1;
-            int maxArtifactValue = -1;
+        public Board rotate(int sy, int sx, int cnt) {
+            Board result = new Board();
+            for (int i = 0; i < N_large; i++) {
+                for (int j = 0; j < N_large; j++) {
+                    result.a[i][j] = this.a[i][j];
+                }
+            }
+            for (int k = 0; k < cnt; k++) {
+                int tmp = result.a[sy + 0][sx + 2];
+                result.a[sy + 0][sx + 2] = result.a[sy + 0][sx + 0];
+                result.a[sy + 0][sx + 0] = result.a[sy + 2][sx + 0];
+                result.a[sy + 2][sx + 0] = result.a[sy + 2][sx + 2];
+                result.a[sy + 2][sx + 2] = tmp;
+                tmp = result.a[sy + 1][sx + 2];
+                result.a[sy + 1][sx + 2] = result.a[sy + 0][sx + 1];
+                result.a[sy + 0][sx + 1] = result.a[sy + 1][sx + 0];
+                result.a[sy + 1][sx + 0] = result.a[sy + 2][sx + 1];
+                result.a[sy + 2][sx + 1] = tmp;
+            }
+            return result;
+        }
 
-            // Check all possible 3x3 sub-grids and rotations
-            for (int i = 0; i <= 2; i++) {
-                for (int j = 0; j <= 2; j++) {
-                    for (int rotation = 0; rotation < 3; rotation++) {
-                        int[][] tempGrid = deepCopyGrid(grid);
-                        rotate3x3(tempGrid, i, j, rotation);
-                        int value = calculateArtifactValue(tempGrid);
+        public int calScore() {
+            int score = 0;
+            boolean[][] visit = new boolean[N_large][N_large];
+            int[] dy = {0, 1, 0, -1}, dx = {1, 0, -1, 0};
 
-                        if (value > maxArtifactValue) {
-                            bestRow = i;
-                            bestCol = j;
-                            bestRotation = rotation;
-                            maxArtifactValue = value;
+            for (int i = 0; i < N_large; i++) {
+                for (int j = 0; j < N_large; j++) {
+                    if (!visit[i][j]) {
+                        Queue<int[]> q = new LinkedList<>();
+                        Queue<int[]> trace = new LinkedList<>();
+                        q.offer(new int[]{i, j});
+                        trace.offer(new int[]{i, j});
+                        visit[i][j] = true;
+                        while (!q.isEmpty()) {
+                            int[] cur = q.poll();
+                            for (int k = 0; k < 4; k++) {
+                                int ny = cur[0] + dy[k], nx = cur[1] + dx[k];
+                                if (inRange(ny, nx) && a[ny][nx] == a[cur[0]][cur[1]] && !visit[ny][nx]) {
+                                    q.offer(new int[]{ny, nx});
+                                    trace.offer(new int[]{ny, nx});
+                                    visit[ny][nx] = true;
+                                }
+                            }
                         }
-                    }
-                }
-            }
-
-            if (maxArtifactValue == 0) {
-                break;
-            }
-
-            rotate3x3(grid, bestRow, bestCol, bestRotation);
-            int turnValue = removeAndRefillArtifacts();
-            results.add(turnValue);
-        }
-
-        for (int result : results) {
-            System.out.println(result);
-        }
-
-        sc.close();
-    }
-
-    private static int[][] deepCopyGrid(int[][] original) {
-        int[][] copy = new int[5][5];
-        for (int i = 0; i < 5; i++) {
-            System.arraycopy(original[i], 0, copy[i], 0, 5);
-        }
-        return copy;
-    }
-
-    private static void rotate3x3(int[][] grid, int startRow, int startCol, int rotation) {
-        int[][] temp = new int[3][3];
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                temp[i][j] = grid[startRow + i][startCol + j];
-            }
-        }
-
-        for (int r = 0; r < rotation; r++) {
-            int[][] rotated = new int[3][3];
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    rotated[j][2 - i] = temp[i][j];
-                }
-            }
-            temp = rotated;
-        }
-
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                grid[startRow + i][startCol + j] = temp[i][j];
-            }
-        }
-    }
-
-    private static int calculateArtifactValue(int[][] grid) {
-        boolean[][] visited = new boolean[5][5];
-        int totalValue = 0;
-
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) {
-                if (!visited[i][j]) {
-                    int value = bfs(grid, visited, i, j);
-                    if (value >= 3) {
-                        totalValue += value;
-                    }
-                }
-            }
-        }
-
-        return totalValue;
-    }
-
-    private static int bfs(int[][] grid, boolean[][] visited, int row, int col) {
-        Queue<int[]> queue = new LinkedList<>();
-        queue.add(new int[]{row, col});
-        visited[row][col] = true;
-        int count = 0;
-        int type = grid[row][col];
-
-        while (!queue.isEmpty()) {
-            int[] current = queue.poll();
-            count++;
-
-            for (int d = 0; d < 4; d++) {
-                int newRow = current[0] + dRow[d];
-                int newCol = current[1] + dCol[d];
-
-                if (newRow >= 0 && newRow < 5 && newCol >= 0 && newCol < 5 && !visited[newRow][newCol] && grid[newRow][newCol] == type) {
-                    visited[newRow][newCol] = true;
-                    queue.add(new int[]{newRow, newCol});
-                }
-            }
-        }
-
-        return count;
-    }
-
-    private static int removeAndRefillArtifacts() {
-        boolean[][] visited = new boolean[5][5];
-        int totalValue = 0;
-
-        while (true) {
-            boolean foundArtifact = false;
-            for (int i = 0; i < 5; i++) {
-                for (int j = 0; j < 5; j++) {
-                    if (!visited[i][j]) {
-                        List<int[]> artifact = new ArrayList<>();
-                        if (collectArtifact(grid, visited, i, j, artifact)) {
-                            totalValue += artifact.size();
-                            foundArtifact = true;
-                            for (int[] pos : artifact) {
-                                grid[pos[0]][pos[1]] = 0;
+                        if (trace.size() >= 3) {
+                            score += trace.size();
+                            while (!trace.isEmpty()) {
+                                int[] t = trace.poll();
+                                a[t[0]][t[1]] = 0;
                             }
                         }
                     }
                 }
             }
+            return score;
+        }
 
-            if (!foundArtifact) {
+        public void fill(Queue<Integer> que) {
+            for (int j = 0; j < N_large; j++) {
+                for (int i = N_large - 1; i >= 0; i--) {
+                    if (a[i][j] == 0 && !que.isEmpty()) {
+                        a[i][j] = que.poll();
+                    }
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int K = sc.nextInt();
+        int M = sc.nextInt();
+        Queue<Integer> q = new LinkedList<>();
+        Board board = new Board();
+
+        for (int i = 0; i < N_large; i++) {
+            for (int j = 0; j < N_large; j++) {
+                board.a[i][j] = sc.nextInt();
+            }
+        }
+        for (int i = 0; i < M; i++) {
+            q.offer(sc.nextInt());
+        }
+
+        while (K-- > 0) {
+            int maxScore = 0;
+            Board maxScoreBoard = null;
+            for (int cnt = 1; cnt <= 3; cnt++) {
+                for (int sx = 0; sx <= N_large - N_small; sx++) {
+                    for (int sy = 0; sy <= N_large - N_small; sy++) {
+                        Board rotated = board.rotate(sy, sx, cnt);
+                        int score = rotated.calScore();
+                        if (maxScore < score) {
+                            maxScore = score;
+                            maxScoreBoard = rotated;
+                        }
+                    }
+                }
+            }
+            if (maxScoreBoard == null) {
                 break;
             }
-
-            refillGrid();
-        }
-
-        return totalValue;
-    }
-
-    private static boolean collectArtifact(int[][] grid, boolean[][] visited, int row, int col, List<int[]> artifact) {
-        Queue<int[]> queue = new LinkedList<>();
-        queue.add(new int[]{row, col});
-        visited[row][col] = true;
-        int type = grid[row][col];
-        artifact.add(new int[]{row, col});
-
-        while (!queue.isEmpty()) {
-            int[] current = queue.poll();
-
-            for (int d = 0; d < 4; d++) {
-                int newRow = current[0] + dRow[d];
-                int newCol = current[1] + dCol[d];
-
-                if (newRow >= 0 && newRow < 5 && newCol >= 0 && newCol < 5 && !visited[newRow][newCol] && grid[newRow][newCol] == type) {
-                    visited[newRow][newCol] = true;
-                    queue.add(new int[]{newRow, newCol});
-                    artifact.add(new int[]{newRow, newCol});
-                }
+            board = maxScoreBoard;
+            while (true) {
+                board.fill(q);
+                int newScore = board.calScore();
+                if (newScore == 0) break;
+                maxScore += newScore;
             }
-        }
-
-        return artifact.size() >= 3;
-    }
-
-    private static void refillGrid() {
-        for (int col = 0; col < 5; col++) {
-            List<Integer> newCol = new ArrayList<>();
-
-            for (int row = 4; row >= 0; row--) {
-                if (grid[row][col] != 0) {
-                    newCol.add(grid[row][col]);
-                }
-            }
-
-            int newSize = newCol.size();
-            for (int row = 4; row >= 0; row--) {
-                if (row >= 5 - newSize) {
-                    grid[row][col] = newCol.get(4 - row);
-                } else {
-                    grid[row][col] = artifactPieces.get(artifactIndex);
-                    artifactIndex = (artifactIndex + 1) % artifactPieces.size();
-                }
-            }
+            System.out.print(maxScore + " ");
         }
     }
 }
