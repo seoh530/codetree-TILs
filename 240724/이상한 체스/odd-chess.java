@@ -1,139 +1,154 @@
-import java.util.Scanner;
-
-import java.util.ArrayList;
-
-class Pair {
-    int x, y;
-
-    public Pair(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-}
+import java.util.*;
 
 public class Main {
-    public static final int INT_MAX = Integer.MAX_VALUE;
-    public static final int DIR_NUM = 4;
-    public static final int CHESS_TYPE_NUM = 5;
-    public static final int MAX_M = 8;
-    public static final int MAX_N = 8;
-    
-    public static int n, m;
-    public static int minArea = INT_MAX;
-    public static ArrayList<Pair> chessPieces = new ArrayList<>();
-    public static int[][] board = new int[MAX_N][MAX_M];
-    
-    // 말들의 방향을 표시합니다.
-    public static int[][] pieceDir = new int[MAX_N][MAX_M];
-    
-    // 자신의 말로 갈 수 있는 영역을 표시합니다.
-    public static boolean[][] visited = new boolean[MAX_N][MAX_M];
-    
-    // 입력으로 주어진 방향에 대해
-    // 말의 종류마다 북동남서 방향으로
-    // 이동이 가능한지 표시합니다.
-    public static int[][] canMove = new int[][]{
-        {},
-        {1, 0, 0, 0},
-        {0, 1, 0, 1},
-        {1, 1, 0, 0},
-        {1, 1, 0, 1},
-        {1, 1, 1, 1}
-    };
-    
-    public static boolean inRange(int x, int y) {
-        return 0 <= x && x < n && 0 <= y && y < m;
-    }
-    
-    // 움직일 수 있는 곳인지 여부를 확인합니다.
-    public static boolean canGo(int x, int y) {
-        return inRange(x, y) && board[x][y] != 6;
-    }
-    
-    // (startX, startY)에서 해당 타입의 말이 특정 방향을 
-    // 바라보고 있을 때 갈 수 있는 곳들을 전부 표시합니다.
-    public static void fill(int startX, int startY, int pieceNum, int faceDir) {
-        // 북동남서 순으로 방향을 설정합니다.
-        int[] dx = new int[]{-1, 0, 1, 0};
-        int[] dy = new int[]{0, 1, 0, -1};
-        
-        for(int i = 0; i < 4; i++) {
-            // 해당 말이 움직일 수 있는 방향인지를 확인합니다.
-            // 움직일 수 없다면 pass합니다.
-            if(canMove[pieceNum][i] == 0)
-                continue;
-            
-            // 갈 수 있다면, 끝날때까지 계속 진행합니다.
-            // 방향은 faceDir만큼 시계방향으로 
-            // 회전했을 때를 기준으로 움직입니다.
-            int x = startX, y = startY;
-            int moveDir = (i + faceDir) % 4;
-            while(true) {
-                visited[x][y] = true;
-                int nx = x + dx[moveDir], ny = y + dy[moveDir];
-                if(canGo(nx, ny)) {
-                    x = nx; y = ny;
-                }
-                else
-                    break;
-            }
-        }
-    }
-    
-    // n 개의 체스 말의 방향이 정해졌을 때 이동할 수 없는 영역의 넓이를 반환합니다.
-    public static int getArea() {
-        // visited 배열을 초기화합니다.
-        for(int i = 0; i < n; i++)
-            for(int j = 0; j < m; j++)
-                visited[i][j] = false;
-    
-        for(int i = 0; i < chessPieces.size(); i++) {
-            int x = chessPieces.get(i).x;
-            int y = chessPieces.get(i).y;
-            
-            // 해당 말이 정해진 방향에 있을 때 갈 수 있는 곳들을 전부 표시합니다.
-            fill(x, y, board[x][y], pieceDir[x][y]);
-        }
-        
-        int area = 0;
-        for(int i = 0; i < n; i++)
-            for(int j = 0; j < m; j++)
-                if(!visited[i][j] && board[i][j] != 6)
-                    area++;
-    
-        return area;
-    }
-    
-    public static void searchMinArea(int cnt) {
-        // 자신의 말들의 방향이 전부 결정되었을 때, 갈 수 없는 넓이를 계산하여 갱신합니다.
-        if(cnt == chessPieces.size())  {
-            minArea = Math.min(minArea, getArea());
-            return;
-        }
-    
-        // cnt 말의 방향을 설정합니다. 
-        int pieceX = chessPieces.get(cnt).x;
-        int pieceY = chessPieces.get(cnt).y;
-        
-        for(int i = 0; i < 4; i++) {
-            pieceDir[pieceX][pieceY] = i;
-            searchMinArea(cnt + 1);
-        }
-    }
+    static int n, m;
+    static int[][] board;
+    static boolean[][] visited;
+    static List<int[]> mine = new ArrayList<>();
+    static int[] dx = {-1, 1, 0, 0}; // 상하좌우
+    static int[] dy = {0, 0, -1, 1}; // 상하좌우
+    static int minBlocked = Integer.MAX_VALUE;
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
+
         n = sc.nextInt();
         m = sc.nextInt();
-        
-        for(int i = 0; i < n; i++)
-            for(int j = 0; j < m; j++) {
-                board[i][j] = sc.nextInt();
-                if(1 <= board[i][j] && board[i][j] <= 5)
-                    chessPieces.add(new Pair(i, j));
-            }
 
-        searchMinArea(0);
-        System.out.print(minArea);
+        board = new int[n][m];
+        visited = new boolean[n][m];
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                board[i][j] = sc.nextInt();
+                if (board[i][j] >= 1 && board[i][j] <= 5) {
+                    mine.add(new int[] {board[i][j], i, j});
+                }
+            }
+        }
+
+        // 각 말들의 이동 방향 설정
+        setDirections(0);
+        
+        System.out.println(minBlocked);
+    }
+
+    // 각 말들의 이동 방향을 설정하는 함수
+    static void setDirections(int index) {
+        if (index == mine.size()) {
+            // 모든 말의 방향을 설정한 후, 이동 범위를 계산
+            calculateBlockedCells();
+            return;
+        }
+
+        int[] piece = mine.get(index);
+        int type = piece[0];
+        int x = piece[1];
+        int y = piece[2];
+
+        if (type == 1) {
+            // Type 1: 한 방향 (상하좌우 중 하나)
+            for (int dir = 0; dir < 4; dir++) {
+                move(x, y, dir);
+                setDirections(index + 1);
+                resetVisited(x, y, dir);
+            }
+        } else if (type == 2) {
+            // Type 2: 두 방향 (상하 or 좌우)
+            for (int i = 0; i < 2; i++) {
+                move(x, y, i);
+                move(x, y, i + 2);
+                setDirections(index + 1);
+                resetVisited(x, y, i);
+                resetVisited(x, y, i + 2);
+            }
+        } else if (type == 3) {
+            // Type 3: 직각 방향 (상좌, 상우, 하좌, 하우)
+            move(x, y, 0); move(x, y, 2);
+            setDirections(index + 1);
+            resetVisited(x, y, 0); resetVisited(x, y, 2);
+
+            move(x, y, 0); move(x, y, 3);
+            setDirections(index + 1);
+            resetVisited(x, y, 0); resetVisited(x, y, 3);
+
+            move(x, y, 1); move(x, y, 2);
+            setDirections(index + 1);
+            resetVisited(x, y, 1); resetVisited(x, y, 2);
+
+            move(x, y, 1); move(x, y, 3);
+            setDirections(index + 1);
+            resetVisited(x, y, 1); resetVisited(x, y, 3);
+        } else if (type == 4) {
+            // Type 4: 세 방향 (상하좌, 상하우, 상좌우, 하좌우)
+            for (int i = 0; i < 4; i++) {
+                move(x, y, i);
+                move(x, y, (i + 1) % 4);
+                move(x, y, (i + 2) % 4);
+                setDirections(index + 1);
+                resetVisited(x, y, i);
+                resetVisited(x, y, (i + 1) % 4);
+                resetVisited(x, y, (i + 2) % 4);
+            }
+        } else if (type == 5) {
+            // Type 5: 네 방향 (상하좌우)
+            for (int dir = 0; dir < 4; dir++) {
+                move(x, y, dir);
+            }
+            setDirections(index + 1);
+            for (int dir = 0; dir < 4; dir++) {
+                resetVisited(x, y, dir);
+            }
+        }
+    }
+
+    // 말의 이동 범위를 설정하는 함수
+    static void move(int x, int y, int dir) {
+        int nx = x, ny = y;
+        while (true) {
+            nx += dx[dir];
+            ny += dy[dir];
+            if (!isValid(nx, ny) || board[nx][ny] == 6) break;
+            visited[nx][ny] = true;
+        }
+    }
+
+    // 방문 기록을 초기화하는 함수
+    static void resetVisited(int x, int y, int dir) {
+        int nx = x, ny = y;
+        while (true) {
+            nx += dx[dir];
+            ny += dy[dir];
+            if (!isValid(nx, ny) || board[nx][ny] == 6) break;
+            visited[nx][ny] = false;
+        }
+    }
+
+    // 유효한 위치인지 확인하는 함수
+    static boolean isValid(int x, int y) {
+        return x >= 0 && x < n && y >= 0 && y < m;
+    }
+
+    // 갈 수 없는 영역을 계산하는 함수
+    static void calculateBlockedCells() {
+        boolean[][] tempVisited = new boolean[n][m];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (visited[i][j]) {
+                    tempVisited[i][j] = true;
+                }
+            }
+        }
+
+        int blockedCells = 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (board[i][j] == 0 && !tempVisited[i][j]) {
+                    blockedCells++;
+                }
+            }
+        }
+
+        minBlocked = Math.min(minBlocked, blockedCells);
     }
 }
